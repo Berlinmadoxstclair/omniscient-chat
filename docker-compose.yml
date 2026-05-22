@@ -1,0 +1,37 @@
+version: "3.9"
+
+# Minimal self-hosted stack:
+#   - postgres (with pgvector) — Supabase-style local DB
+#   - the Next.js app
+#
+# For full Supabase Auth (magic links via SMTP), follow the Supabase
+# self-host guide (https://supabase.com/docs/guides/self-hosting/docker)
+# and point NEXT_PUBLIC_SUPABASE_URL at that stack. This compose file gives
+# you the DB + app; you can run `supabase start` from the Supabase CLI
+# alongside it for the auth/storage gateway.
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: postgres
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./supabase/migrations:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - db
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+
+volumes:
+  db_data:
