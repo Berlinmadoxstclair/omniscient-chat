@@ -7,7 +7,7 @@ An open-source, cloud-hosted AI chat that routes each message to the best model 
 - **Auto-routing** — A fast classifier (Gemini Flash) labels each prompt as `code / reasoning / creative / vision / longcontext / uncensored / general` and forwards it to the model best suited for that category.
 - **Manual override** — Pin any model from the picker; the classifier is bypassed.
 - **RAG** — Upload PDFs or text. They're chunked, embedded with `text-embedding-3-small`, stored in pgvector. Top-5 chunks are injected into the system prompt on every turn.
-- **Magic-link auth** — Supabase email OTP. No passwords.
+- **Email + password auth** — Supabase Auth, standard sign-in / sign-up flow.
 - **Audit trail** — Every routing decision is logged (`category`, `confidence`, `chosen_model`, classifier latency) so you can tune the routing table from real data.
 
 ## Stack
@@ -45,6 +45,7 @@ You'll provision three accounts (Supabase, OpenRouter, OpenAI), push the repo to
    - `anon` `public` key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `service_role` `secret` key → `SUPABASE_SERVICE_ROLE_KEY`
 4. Go to **Authentication → URL Configuration** and set Site URL to your Vercel URL (you'll have this after step 4). Add `https://<your-vercel-url>/auth/callback` to **Redirect URLs**.
+5. **Optional but recommended for personal use:** Authentication → **Providers → Email** → toggle **Confirm email** OFF. With it off, sign-up logs you in immediately; with it on, Supabase emails a confirmation link first.
 
 ### 2. OpenRouter
 
