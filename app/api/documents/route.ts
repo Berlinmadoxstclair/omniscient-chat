@@ -41,8 +41,9 @@ export async function POST(req: Request) {
   try {
     if (mime === "application/pdf") {
       const buf = Buffer.from(await file.arrayBuffer());
-      // Lazy import — pdf-parse is heavy
-      const pdfParse = (await import("pdf-parse")).default;
+      // Lazy import — point at the inner file to skip pdf-parse's test wrapper
+      // which throws at import time under Next.js bundling.
+      const pdfParse = (await import("pdf-parse/lib/pdf-parse.js")).default;
       const parsed = await pdfParse(buf);
       text = parsed.text;
     } else if (
