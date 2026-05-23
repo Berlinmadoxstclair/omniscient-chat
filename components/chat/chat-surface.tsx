@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ModelPicker } from "./model-picker";
 import { Markdown } from "./markdown";
-import { Sparkles, Send, StopCircle, FileText, Brain } from "lucide-react";
+import { Sparkles, Send, StopCircle, FileText, Brain, PenLine } from "lucide-react";
 
 interface Props {
   conversationId: string | null;
@@ -25,6 +25,7 @@ interface AssistantMeta {
 export function ChatSurface({ conversationId, onConversationCreated, onMemoryUpdated }: Props) {
   const [modelOverride, setModelOverride] = useState("auto");
   const [useRag, setUseRag] = useState(true);
+  const [writerMode, setWriterMode] = useState(false);
   const [lastMeta, setLastMeta] = useState<AssistantMeta | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -52,7 +53,7 @@ export function ChatSurface({ conversationId, onConversationCreated, onMemoryUpd
   function submit() {
     if (!input.trim()) return;
     handleSubmit(undefined, {
-      body: { conversationId, modelOverride, useRag },
+      body: { conversationId, modelOverride, useRag, writerMode },
     });
   }
 
@@ -115,16 +116,38 @@ export function ChatSurface({ conversationId, onConversationCreated, onMemoryUpd
           )}
         </div>
         <div className="flex items-center gap-2">
-          <label className="flex items-center gap-1.5 text-xs text-muted-foreground select-none">
-            <input
-              type="checkbox"
-              checked={useRag}
-              onChange={(e) => setUseRag(e.target.checked)}
-              className="accent-primary"
-            />
-            <FileText className="size-3" /> RAG
-          </label>
-          <ModelPicker value={modelOverride} onChange={setModelOverride} />
+          {/* Writer Mode toggle */}
+          <button
+            type="button"
+            onClick={() => setWriterMode((v) => !v)}
+            title={writerMode ? "Writer Mode ON — click to disable" : "Enable Writer Mode"}
+            className={`flex items-center gap-1.5 text-xs rounded-md px-2.5 py-1 border transition-all select-none ${
+              writerMode
+                ? "bg-violet-500/15 border-violet-500/40 text-violet-300 font-medium"
+                : "border-border text-muted-foreground hover:text-foreground hover:border-border/80"
+            }`}
+          >
+            <PenLine className="size-3" />
+            Writer
+          </button>
+
+          {/* RAG toggle — hide in writer mode (still sent, just not surfaced) */}
+          {!writerMode && (
+            <label className="flex items-center gap-1.5 text-xs text-muted-foreground select-none">
+              <input
+                type="checkbox"
+                checked={useRag}
+                onChange={(e) => setUseRag(e.target.checked)}
+                className="accent-primary"
+              />
+              <FileText className="size-3" /> RAG
+            </label>
+          )}
+
+          {/* Model picker — hide in writer mode (model is fixed to Claude) */}
+          {!writerMode && (
+            <ModelPicker value={modelOverride} onChange={setModelOverride} />
+          )}
         </div>
       </header>
 
@@ -133,10 +156,23 @@ export function ChatSurface({ conversationId, onConversationCreated, onMemoryUpd
         <div className="mx-auto max-w-3xl space-y-6">
           {messages.length === 0 && (
             <div className="text-center text-muted-foreground py-20">
-              <Sparkles className="mx-auto size-6 mb-2" />
-              <p className="text-sm">
-                Ask anything. The classifier picks the best model per turn, or pin one above.
-              </p>
+              {writerMode ? (
+                <>
+                  <PenLine className="mx-auto size-6 mb-2 text-violet-400" />
+                  <p className="text-sm font-medium text-violet-300">Writer Mode</p>
+                  <p className="text-xs mt-1 text-muted-foreground max-w-xs mx-auto">
+                    Give me a concept, a title, a feeling, a first line — anything.
+                    Songs, novels, fiction, non-fiction. I&apos;ll build from what you bring.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mx-auto size-6 mb-2" />
+                  <p className="text-sm">
+                    Ask anything. The classifier picks the best model per turn, or pin one above.
+                  </p>
+                </>
+              )}
             </div>
           )}
           {messages.map((m) => (
@@ -172,7 +208,7 @@ export function ChatSurface({ conversationId, onConversationCreated, onMemoryUpd
               value={input}
               onChange={handleInputChange}
               onKeyDown={onKeyDown}
-              placeholder="Message Omniscient..."
+              placeholder={writerMode ? "Give me a concept, title, feeling, or first line…" : "Message Omniscient..."}
               className="min-h-[60px] pr-24"
               rows={2}
             />

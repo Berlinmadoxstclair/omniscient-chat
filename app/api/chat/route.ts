@@ -11,6 +11,7 @@ import {
   storeMemories,
 } from "@/lib/memory";
 import { extractMemoriesFromMessages } from "@/lib/memory-extractor";
+import { WRITER_SYSTEM, WRITER_MODEL } from "@/lib/writer-mode";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -20,6 +21,7 @@ interface ChatBody {
   messages: CoreMessage[];
   modelOverride?: string; // "auto" or a specific OpenRouter slug
   useRag?: boolean;
+  writerMode?: boolean;
 }
 
 const SYSTEM_BASE = `You are Omniscient — a personal AI assistant with persistent memory of the user across all conversations.
@@ -39,7 +41,7 @@ export async function POST(req: Request) {
   }
 
   const body = (await req.json()) as ChatBody;
-  const { messages, modelOverride, useRag = true } = body;
+  const { messages, modelOverride, useRag = true, writerMode = false } = body;
   let { conversationId } = body;
 
   const lastUser = [...messages].reverse().find((m) => m.role === "user");
@@ -51,13 +53,17 @@ export async function POST(req: Request) {
           .map((p) => p.text ?? "")
           .join("\n") ?? "";
 
-  // ---- Classify (unless user pinned a model) ----
-  const auto = !modelOverride || modelOverride === "auto";
-  let category: Category = "general";
+  // ---- Writer mode short-circuits the classifier ----
+  const auto = !writerMode && (!modelOverride || modelOverride === "auto");
+  let category: Category = writerMode ? "creative" : "general";
   let confidence = 1;
-  let chosenModel = modelOverride ?? "";
+  let chosenModel = writerMode
+    ? WRITER_MODEL
+    : modelOverride && modelOverride !== "auto"
+    ? modelOverride
+    : "";
   let classifierMs = 0;
-  let classifierReason = "manual override";
+  let classifierReason = writerMode ? "writer mode" : "manual override";
 
   if (auto) {
     const hasImage =
@@ -69,8 +75,6 @@ export async function POST(req: Request) {
     chosenModel = result.model;
     classifierMs = result.latencyMs;
     classifierReason = result.reasoning;
-  } else {
-    category = "general";
   }
 
   // ---- Memory retrieval (parallel with RAG) ----
@@ -84,6 +88,9 @@ export async function POST(req: Request) {
   ]);
 
   const memoryBlock = formatMemoriesForPrompt(pinnedMemories, relevantMemories);
+
+  // Choose base system prompt
+  const systemBase = writerMode ? WRITER_SYSTEM : SYSTEM_BASE;
 
   // ---- RAG context block ----
   let ragContext = "";
@@ -128,9 +135,9 @@ export async function POST(req: Request) {
 
   const result = streamText({
     model: openrouter(chosenModel || modelForCategory("general")),
-    system: SYSTEM_BASE + memoryBlock + ragContext,
+    system: systemBase + memoryBlock + ragContext,
     messages,
-    temperature: category === "creative" ? 0.9 : category === "reasoning" ? 0.2 : 0.5,
+    temperature: writerMode ? 0.92 : category === "creative" ? 0.9 : category === "reasoning" ? 0.2 : 0.5,
     onFinish: async ({ text }) => {
       if (!convId) return;
 
@@ -184,6 +191,7 @@ export async function POST(req: Request) {
       "X-Category": category,
       "X-Auto": auto ? "1" : "0",
       "X-Memory-Count": String(pinnedMemories.length + relevantMemories.length),
+      "X-Writer-Mode": writerMode ? "1" : "0",
     },
   });
 }
