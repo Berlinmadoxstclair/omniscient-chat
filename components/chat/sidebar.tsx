@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, MessageSquare, Trash2, FileText, LogOut, Sparkles } from "lucide-react";
+import { Plus, MessageSquare, Trash2, FileText, LogOut, Sparkles, Brain } from "lucide-react";
 import { truncate } from "@/lib/utils";
 
 export interface Conversation {
@@ -23,11 +24,15 @@ export function Sidebar({
   onSelect,
   onNew,
   onOpenDocs,
+  onOpenMemory,
+  memoryCount,
 }: {
   activeId: string | null;
   onSelect: (id: string) => void;
   onNew: () => void;
   onOpenDocs: () => void;
+  onOpenMemory: () => void;
+  memoryCount?: number;
 }) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
 
@@ -99,6 +104,20 @@ export function Sidebar({
         </div>
       </ScrollArea>
       <div className="p-2 border-t border-border flex flex-col gap-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start text-xs"
+          onClick={onOpenMemory}
+        >
+          <Brain className="size-3.5" />
+          Memory
+          {memoryCount !== undefined && memoryCount > 0 && (
+            <Badge variant="secondary" className="ml-auto text-[9px] px-1.5 py-0 h-4">
+              {memoryCount}
+            </Badge>
+          )}
+        </Button>
         <Button variant="ghost" size="sm" className="w-full justify-start text-xs" onClick={onOpenDocs}>
           <FileText className="size-3.5" /> Documents
         </Button>

@@ -7,20 +7,22 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ModelPicker } from "./model-picker";
 import { Markdown } from "./markdown";
-import { Sparkles, Send, StopCircle, FileText } from "lucide-react";
+import { Sparkles, Send, StopCircle, FileText, Brain } from "lucide-react";
 
 interface Props {
   conversationId: string | null;
   onConversationCreated: (id: string) => void;
+  onMemoryUpdated?: () => void;
 }
 
 interface AssistantMeta {
   model: string;
   category: string;
   auto: boolean;
+  memoryCount: number;
 }
 
-export function ChatSurface({ conversationId, onConversationCreated }: Props) {
+export function ChatSurface({ conversationId, onConversationCreated, onMemoryUpdated }: Props) {
   const [modelOverride, setModelOverride] = useState("auto");
   const [useRag, setUseRag] = useState(true);
   const [lastMeta, setLastMeta] = useState<AssistantMeta | null>(null);
@@ -34,11 +36,16 @@ export function ChatSurface({ conversationId, onConversationCreated }: Props) {
         const model = res.headers.get("X-Model") ?? "";
         const category = res.headers.get("X-Category") ?? "general";
         const auto = res.headers.get("X-Auto") === "1";
-        setLastMeta({ model, category, auto });
+        const memoryCount = parseInt(res.headers.get("X-Memory-Count") ?? "0", 10);
+        setLastMeta({ model, category, auto, memoryCount });
         if (id && id !== conversationId) {
           onConversationCreated(id);
           window.dispatchEvent(new Event("conv:refresh"));
         }
+      },
+      onFinish() {
+        // Notify parent that memories may have been extracted
+        onMemoryUpdated?.();
       },
     });
 
@@ -94,6 +101,16 @@ export function ChatSurface({ conversationId, onConversationCreated }: Props) {
                 {lastMeta.category}
               </Badge>
               <span className="text-[11px] text-muted-foreground truncate">{lastMeta.model}</span>
+              {lastMeta.memoryCount > 0 && (
+                <Badge
+                  variant="outline"
+                  className="text-[10px] px-1.5 gap-1 text-muted-foreground"
+                  title={`${lastMeta.memoryCount} memories active`}
+                >
+                  <Brain className="size-2.5" />
+                  {lastMeta.memoryCount}
+                </Badge>
+              )}
             </>
           )}
         </div>
