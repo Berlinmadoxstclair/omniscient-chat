@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { X, Upload, FileText, Trash2 } from "lucide-react";
+import { X, Upload, FileText, Trash2, File } from "lucide-react";
 
 interface Doc {
   id: string;
@@ -51,78 +50,131 @@ export function DocumentsPanel({ open, onClose }: { open: boolean; onClose: () =
     load();
   }
 
+  function formatSize(bytes: number) {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={onClose}>
+    <>
+      {/* Backdrop */}
       <div
-        className="w-full max-w-lg rounded-lg border border-border bg-background shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header className="flex items-center justify-between border-b border-border px-4 py-3">
+        className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Panel */}
+      <aside className="fixed right-0 top-0 h-screen w-[420px] max-w-full z-50 flex flex-col bg-background border-l border-border shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
           <div className="flex items-center gap-2">
-            <FileText className="size-4" />
-            <h2 className="text-sm font-semibold">Documents (RAG)</h2>
-          </div>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
-            <X className="size-4" />
-          </button>
-        </header>
-
-        <div className="p-4 space-y-3">
-          <label className="block">
-            <input
-              ref={fileRef}
-              type="file"
-              accept=".pdf,.txt,.md,.markdown,.csv,.json,text/*"
-              className="hidden"
-              onChange={onUpload}
-            />
-            <Button
-              variant="outline"
-              className="w-full"
-              disabled={uploading}
-              onClick={() => fileRef.current?.click()}
-            >
-              <Upload className="size-4" />
-              {uploading ? "Uploading & embedding..." : "Upload PDF or text"}
-            </Button>
-          </label>
-          {err && <p className="text-xs text-destructive">{err}</p>}
-
-          <div className="max-h-72 overflow-auto space-y-1">
-            {docs.map((d) => (
-              <div
-                key={d.id}
-                className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-xs"
-              >
-                <div className="min-w-0">
-                  <div className="truncate font-medium">{d.filename}</div>
-                  <div className="text-muted-foreground">
-                    {(d.byte_size / 1024).toFixed(1)} KB
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge
-                    variant={d.status === "ready" ? "secondary" : "outline"}
-                    className={d.status === "failed" ? "border-destructive text-destructive" : ""}
-                  >
-                    {d.status}
-                  </Badge>
-                  <button onClick={() => del(d.id)} className="text-muted-foreground hover:text-destructive">
-                    <Trash2 className="size-3.5" />
-                  </button>
-                </div>
-              </div>
-            ))}
-            {!docs.length && (
-              <p className="text-xs text-muted-foreground text-center py-6">
-                No documents yet. Uploaded files are embedded and become retrievable in chat.
-              </p>
+            <FileText className="size-4 text-primary" />
+            <span className="font-semibold text-sm">Documents</span>
+            {docs.length > 0 && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                {docs.length}
+              </Badge>
             )}
           </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+          >
+            <X className="size-4" />
+          </button>
         </div>
-      </div>
-    </div>
+
+        {/* Upload */}
+        <div className="px-4 py-3 border-b border-border shrink-0">
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".pdf,.txt,.md,.markdown,.csv,.json,text/*"
+            className="hidden"
+            onChange={onUpload}
+          />
+          <button
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+            className={`
+              w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed
+              text-sm font-medium transition-all
+              ${uploading
+                ? "border-primary/30 text-primary/60 bg-primary/5 cursor-wait"
+                : "border-border hover:border-primary/40 text-muted-foreground hover:text-foreground hover:bg-accent/50 cursor-pointer"
+              }
+            `}
+          >
+            <Upload className={`size-4 ${uploading ? "animate-bounce" : ""}`} />
+            {uploading ? "Uploading & embedding…" : "Upload PDF or text file"}
+          </button>
+          {err && (
+            <p className="text-xs text-destructive mt-2 px-1">{err}</p>
+          )}
+        </div>
+
+        {/* Document list */}
+        <div className="flex-1 overflow-y-auto px-4 py-3">
+          {docs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-40 text-center">
+              <File className="size-8 text-muted-foreground/30 mb-2" />
+              <p className="text-sm text-muted-foreground">No documents yet.</p>
+              <p className="text-xs text-muted-foreground/60 mt-1 max-w-[200px]">
+                Uploaded files are embedded and become searchable in chat.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {docs.map((d) => (
+                <div
+                  key={d.id}
+                  className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5"
+                >
+                  <div className="shrink-0 size-8 rounded-lg bg-muted flex items-center justify-center">
+                    <FileText className="size-4 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{d.filename}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatSize(d.byte_size)} · {new Date(d.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge
+                      variant={d.status === "ready" ? "secondary" : "outline"}
+                      className={`text-[10px] px-1.5 ${
+                        d.status === "failed"
+                          ? "border-destructive/50 text-destructive"
+                          : d.status === "ready"
+                          ? "text-green-400 bg-green-400/10 border-green-400/20"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {d.status}
+                    </Badge>
+                    <button
+                      onClick={() => del(d.id)}
+                      className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-4 py-3 border-t border-border shrink-0">
+          <p className="text-[10px] text-muted-foreground">
+            Supported: PDF, TXT, MD, CSV, JSON. Files are chunked and embedded with pgvector for semantic retrieval.
+          </p>
+        </div>
+      </aside>
+    </>
   );
 }

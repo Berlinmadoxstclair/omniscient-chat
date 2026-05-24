@@ -8,7 +8,7 @@
     --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
     --card-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
+    --primary: 258 80% 55%;
     --primary-foreground: 0 0% 98%;
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
@@ -20,46 +20,107 @@
     --destructive-foreground: 0 0% 98%;
     --border: 240 5.9% 90%;
     --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
-    --radius: 0.5rem;
+    --ring: 258 80% 55%;
+    --radius: 0.75rem;
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    /* Deep navy-black — blue-tinted, not flat */
+    --background: 222 22% 4%;
+    --foreground: 220 18% 94%;
+
+    --card: 222 18% 7%;
+    --card-foreground: 220 18% 94%;
+
+    /* Soft violet primary */
+    --primary: 258 75% 65%;
+    --primary-foreground: 258 75% 8%;
+
+    --secondary: 222 14% 11%;
+    --secondary-foreground: 220 18% 94%;
+
+    --muted: 222 14% 11%;
+    --muted-foreground: 220 8% 50%;
+
+    --accent: 222 14% 13%;
+    --accent-foreground: 220 18% 94%;
+
+    --destructive: 0 62% 48%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
+
+    --border: 222 14% 12%;
+    --input: 222 14% 11%;
+    --ring: 258 75% 65%;
+    --radius: 0.75rem;
   }
 
   * { @apply border-border; }
-  body { @apply bg-background text-foreground; }
+
+  body {
+    @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Hide scrollbar but keep functionality */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-border rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-muted-foreground/40; }
 }
 
+/* Safe-area bottom padding for iPhone home bar */
+@layer utilities {
+  .pb-safe {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+  .pt-safe {
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+  }
+}
+
+/* ── Markdown rendering ───────────────────────────────────── */
+.markdown {
+  @apply text-sm leading-relaxed;
+}
 .markdown pre {
-  @apply bg-muted text-foreground/90 rounded-md p-3 my-2 overflow-x-auto text-sm;
+  @apply rounded-xl my-3 overflow-x-auto text-[13px] leading-relaxed;
+  background: hsl(222 22% 6%);
+  border: 1px solid hsl(222 14% 13%);
+  padding: 1rem 1.125rem;
 }
 .markdown code {
-  @apply bg-muted px-1 py-0.5 rounded text-sm;
+  @apply text-[13px] rounded-md px-1.5 py-0.5;
+  background: hsl(222 14% 11%);
+  border: 1px solid hsl(222 14% 15%);
 }
-.markdown pre code { @apply bg-transparent p-0; }
+.markdown pre code {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
 .markdown p { @apply my-2 leading-relaxed; }
-.markdown ul { @apply list-disc pl-6 my-2; }
-.markdown ol { @apply list-decimal pl-6 my-2; }
-.markdown h1 { @apply text-xl font-semibold mt-4 mb-2; }
-.markdown h2 { @apply text-lg font-semibold mt-3 mb-2; }
-.markdown h3 { @apply text-base font-semibold mt-3 mb-1; }
-.markdown a { @apply underline underline-offset-2; }
-.markdown blockquote { @apply border-l-2 border-border pl-3 italic text-muted-foreground; }
+.markdown ul { @apply list-disc pl-5 my-2 space-y-0.5; }
+.markdown ol { @apply list-decimal pl-5 my-2 space-y-0.5; }
+.markdown h1 { @apply text-lg font-semibold mt-5 mb-2; }
+.markdown h2 { @apply text-base font-semibold mt-4 mb-2; }
+.markdown h3 { @apply text-sm font-semibold mt-3 mb-1; }
+.markdown a { @apply text-primary underline underline-offset-2 hover:opacity-80; }
+.markdown blockquote {
+  @apply border-l-2 border-primary/40 pl-3 italic text-muted-foreground my-2;
+}
+.markdown table {
+  @apply w-full text-sm my-3 border-collapse;
+}
+.markdown th {
+  @apply text-left px-3 py-1.5 font-medium text-muted-foreground;
+  border-bottom: 1px solid hsl(222 14% 13%);
+}
+.markdown td {
+  @apply px-3 py-1.5;
+  border-bottom: 1px solid hsl(222 14% 11%);
+}
+.markdown hr {
+  @apply my-4;
+  border-color: hsl(222 14% 13%);
+}
